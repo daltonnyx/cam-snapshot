@@ -45,5 +45,6 @@ while(($line = fgets($file)) !== false) {
 }
 fclose($file);
 fclose($imgfile);
+unset("/tmp/image.tmp");
 $err = curl_error($curl);
 
