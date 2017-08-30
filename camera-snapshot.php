@@ -17,7 +17,7 @@ class CamSnapshot {
           CURLOPT_ENCODING => "",
           CURLOPT_FILE => $this->file,
           CURLOPT_MAXREDIRS => 10,
-          CURLOPT_TIMEOUT => 30,
+          CURLOPT_TIMEOUT => 10,
           CURLOPT_HEADER => true,
           CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
           CURLOPT_CUSTOMREQUEST => "GET",
@@ -32,27 +32,39 @@ class CamSnapshot {
     }
 
     public function fetchTo($dir = '.') {
-        $this->getSnapshot();
+        if($this->getSnapshot() === false) {
+          echo "failed to get snapshot from link\n";
+          return;
+        }
         try {
             fseek($this->file, 0);
             $start = false;
             $line_seek = 0;
             $imgfile = fopen("$dir/image-".time().".jpg", "a");
-            while(($line = fgets($this->file)) !== false) {
-                if( trim($line) == $boundary && $start )
-                    break;
-                if($start && $line_seek < 3) {
-                    $line_seek++;
-                    continue;
+            if($this->boundary === false) {
+              while(($line = fgets($this->file)) !== false) {
+                if($line_seek < 11) { // Ignore header part
+                  $line_seek++;
+                  continue;
                 }
-                if($start)
-                    fwrite($imgfile, $line);
-                if( trim($line) == $boundary && !$start )
-                    $start = true;
+                fwrite($imgfile, $line);
+              }
+            }
+            else {
+              while(($line = fgets($this->file)) !== false) {
+                  if( trim($line) == $this->boundary && $start )
+                      break;
+                  if($start && $line_seek < 3) {
+                      $line_seek++;
+                      continue;
+                  }
+                  if($start)
+                      fwrite($imgfile, $line);
+                  if( trim($line) == $this->boundary && !$start )
+                      $start = true;
+              }
             }
             fclose($imgfile);
-
-            $err = curl_error($curl);
         }
         catch(Exception $e) {
             echo var_dump($e);
@@ -67,7 +79,10 @@ class CamSnapshot {
             if(preg_match('/boundary=(\w+)/', $line, $match))
                 break;
         }
-        $this->boundary = '--'.$match[1];
+        if( count($match) > 0 )
+          $this->boundary = '--'.$match[1];
+        else
+          $this->boundary = false;
     }
 
     function __destruct() {

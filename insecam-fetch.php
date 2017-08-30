@@ -20,7 +20,7 @@ class WebFetch {
   protected function fetch() {
     $response = curl_exec($this->ch);
     $err = curl_error($this->ch);
-    curl_close($his->ch);
+    curl_close($this->ch);
     if($err)
       return $err;
     return $response;
