@@ -42,11 +42,12 @@ class CamSnapshot {
             $line_seek = 0;
             $imgfile = fopen("$dir/image-".time().".jpg", "a");
             if($this->boundary === false) {
-              while(($line = fgets($this->file)) !== false) {
-                if($line_seek < 11) { // Ignore header part
-                  $line_seek++;
+                while(($line = fgets($this->file)) !== false) {
+                if( !$start && strpos($line, "\xFF\xD8\xFF") !== 0 ) { // Ignore header part
                   continue;
                 }
+                if( !$start &&  strpos($line, "\xFF\xD8\xFF") === 0 )
+                    $start = true;
                 fwrite($imgfile, $line);
               }
             }
